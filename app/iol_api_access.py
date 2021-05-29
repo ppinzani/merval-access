@@ -57,10 +57,13 @@ class IolApiAccess:
             # Se vencio el bearer token
             self.refresh_token()
 
+    def get_token(self):
+        return self.__bearer_token
+
     def authenticate(self):
         #Primero vamos a pedir el usuario y contraseña
         self.__username = input("Usuario: ")
-        self.__password = getpass()
+        self.__password = getpass("Password: ")
 
         #Armo el diccionario con los parametros
         data = {
@@ -106,3 +109,28 @@ class IolApiAccess:
                          auth=BearerAuth(self.__bearer_token))
 
         return r
+
+    def get_panel_cotizaciones(self, pais, panel, instrumento):
+        # Lo armo como diccionario para poder pasarlo a la funcion format
+        url_params = {
+            "instrumento": instrumento,
+            "pais": pais,
+            "panel": panel
+        }
+
+        '''
+        Los parametros del Query son los mismos pero agregando panel
+        Cotizacion. al principio del nombre
+        '''
+        query_params = {"panelCotizacion."+key: value for key, value
+                        in url_params.items()}
+
+        #Armo la url a consultar, el formato vien dado desde la API
+        endpoint = "https://api.invertironline.com/api/v2/Cotizaciones/{instrumento}/{panel}/{pais}".format(**url_params)
+
+        r = self.get(url=endpoint, params=query_params)
+
+        if r.status_code == 200:
+            return r.json()
+        else:
+            assert 0, "Algo salio mal. Status Code: %d " % (r.status_code)
